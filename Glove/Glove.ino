@@ -1,28 +1,87 @@
-#include <TM1638.h>
 #include <RH_ASK.h>
 #include <SPI.h> 
+#include <math.h>
+
+#define RING    2
+#define THUMB   3
+#define INDEX   4
+#define MIDDLE  5
+#define LITTLE  6
+
+#define INT_MAX 2147483647
 
 RH_ASK driver;
+double average=55;
+long sum = analogRead(A0);
+int cases = 1;
 
-TM1638 module(8, 9, 10); // TM1638 module pins
-#define TX
+
 
 void setup() {
-  Serial.begin(9600);    // Debugging only
-    if (!driver.init())
-         Serial.println("init failed");
-    else
-         Serial.println("good to go");  
-  module.clearDisplay();
-  module.setupDisplay(true, 3); // where 7 is intensity (from 0~7)
-  int a = 0;
-  module.setDisplayToDecNumber(a,0,true);
+  Serial.begin(9600);
+  pinMode(RING, OUTPUT);
+  pinMode(THUMB, OUTPUT);
+  pinMode(INDEX, OUTPUT);
+  pinMode(MIDDLE, OUTPUT);
+  pinMode(LITTLE, OUTPUT);
+  for(int i = 0; i < 100; i++)
+  {
+    processFlexData(55);
+  }
+     
+  
+}
+
+void allON()
+{
+    //digitalWrite(THUMB, HIGH);
+    digitalWrite(RING, HIGH);
+    digitalWrite(INDEX, HIGH);
+    digitalWrite(MIDDLE, HIGH);
+    digitalWrite(LITTLE, HIGH);
+}
+void allOFF()
+{
+    digitalWrite(THUMB, LOW);
+    digitalWrite(RING, LOW);
+    digitalWrite(INDEX, LOW);
+    digitalWrite(MIDDLE, LOW);
+    digitalWrite(LITTLE, LOW);
 }
 
 void loop() {
-    recieve();
-   
-   
+  int value = analogRead(A0);         //Read and save analog value from potentiometer
+  Serial.print("average=");    
+  Serial.print(average);
+  Serial.print(" | value=");    
+  Serial.print(value);
+  Serial.print(" | diff=");    
+  Serial.println(average - value);
+  int diff = average - value;
+  
+  if(abs(diff) > 1.5 && abs(diff) < 6){
+   processFlexData(value);
+   if(average - value > 0)
+    allON();
+   else
+    allOFF();
+  }
+  delay(50);     
+ 
+                       //Small delay
+ 
+}
+
+void processFlexData(int newValue)
+{
+  if(cases == 1000){ // Random threshold to clear the variables, after 500 cases we reset sum and case amount value
+    cases = 0;
+    sum = 0;
+  }
+  
+  sum += newValue; 
+  cases++;
+  average = sum * 1.0 / cases;
 }
 
 void transmit()
@@ -44,46 +103,7 @@ void recieve()
       Serial.println((char*)buf);         
     }
 }
-void actionManager(){
-  int input = module.getButtons();
 
-  for(int i = 0; i < 8; i++)
-  {
-    int nbit = nthBit(input, i);
-//    disp+= nbit * power(10, i);
-    if(nbit == 1)
-     switch(i)
-      {
-        case 0:
-        buttonAction0();
-        break;
-        case 1:
-        buttonAction1();
-        break;
-        case 2:
-        buttonAction2();
-        break;
-        case 3:
-        buttonAction3();
-        break;
-        case 4:
-        buttonAction4();
-        break;
-        case 5:
-        buttonAction5();
-        break;
-        case 6:
-        buttonAction6();
-        break;
-        case 7:
-        buttonAction7();
-        break;
-      }
-    
-  }
-  return;
-  
-}
 
 void buttonAction0()
 {
