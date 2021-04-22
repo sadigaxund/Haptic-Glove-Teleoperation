@@ -26,7 +26,7 @@ void setup() {
   pinMode(LITTLE, OUTPUT);
   for(int i = 0; i < 100; i++)
   {
-    processFlexData(55);
+    processFlexData(analogRead(A0));
   }
      
   
@@ -48,7 +48,7 @@ void allOFF()
     digitalWrite(MIDDLE, LOW);
     digitalWrite(LITTLE, LOW);
 }
-
+  int prevVal = analogRead(A0);
 void loop() {
   int value = analogRead(A0);         //Read and save analog value from potentiometer
   Serial.print("average=");    
@@ -58,25 +58,42 @@ void loop() {
   Serial.print(" | diff=");    
   Serial.println(average - value);
   int diff = average - value;
+
+  diff = prevVal - value;
   
-  if(abs(diff) > 1.5 && abs(diff) < 6){
+
+  prevVal = value;
+
+  
+  if(abs(diff) > 5){
    processFlexData(value);
+
+   if(diff > 6){
+    resetAverage();
+   }
+   
    if(average - value > 0)
-    allON();
+   allON();
    else
     allOFF();
   }
-  delay(50);     
+  delay(500);     
  
                        //Small delay
  
 }
 
+void resetAverage()
+{
+  cases = 0;
+    sum = 0;
+}
+
 void processFlexData(int newValue)
 {
+  
   if(cases == 1000){ // Random threshold to clear the variables, after 500 cases we reset sum and case amount value
-    cases = 0;
-    sum = 0;
+    resetAverage();
   }
   
   sum += newValue; 
