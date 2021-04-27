@@ -31,41 +31,38 @@ void loop()
   GyX=Wire.read()<<8|Wire.read(); 
   GyY=Wire.read()<<8|Wire.read();  
   GyZ=Wire.read()<<8|Wire.read();  
+//Serial.print("AcX = "); Serial.print(AcX);
    if(AcX<-6000&&-11000)
     {
     char *msg2 = "a";
-    vw_send((uint8_t *)msg2, strlen(msg2));
-    vw_wait_tx(); 
+    
     Serial.println("a");
     }
   
    else if(AcX>4000&&6000)
     {
     char *msg2 = "b";
-    vw_send((uint8_t *)msg2, strlen(msg2));
-    vw_wait_tx(); 
+    
     Serial.println("b");
     }
    else if(AcY<-7000&&-5000)
   {
     char *msg2 = "c";
-    vw_send((uint8_t *)msg2, strlen(msg2));
-    vw_wait_tx(); 
+  
     Serial.println("c");
   }
    else if(AcY>5000&&12000)
 {
     char *msg2 = "d";
-    vw_send((uint8_t *)msg2, strlen(msg2));
-    vw_wait_tx(); 
+    
     Serial.println("d"); 
 }
 else
   {
      char *msg2 = "e";
-    vw_send((uint8_t *)msg2, strlen(msg2));
-    vw_wait_tx(); 
+  
     Serial.println("e"); 
   }
+  
 } 
   

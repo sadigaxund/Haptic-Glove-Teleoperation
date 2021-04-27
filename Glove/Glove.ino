@@ -1,16 +1,21 @@
-#include <RH_ASK.h>
-#include <SPI.h> 
 #include <math.h>
+#include<Wire.h>
+#include <VirtualWire.h>
+const int MPU_addr=0x68;
+int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
+int forward = 8;
 
 #define RING    2
 #define THUMB   3
 #define INDEX   4
 #define MIDDLE  5
 #define LITTLE  6
+#define TX_PIN 12
+#define RX_PIN 11
+
 
 #define INT_MAX 2147483647
 
-RH_ASK driver;
 double average=55;
 long sum = analogRead(A0);
 int cases = 1;
@@ -18,7 +23,19 @@ int cases = 1;
 
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(9600);    
+  Serial.println("setup");
+  // Initialise the IO and ISR
+  vw_set_tx_pin(TX_PIN);
+  vw_set_rx_pin(RX_PIN);
+  vw_setup(2000);  
+  vw_rx_start();
+  
+  Wire.begin();
+  Wire.beginTransmission(MPU_addr);
+  Wire.write(0x6B); 
+  Wire.write(0);     
+  Wire.endTransmission(true);
   pinMode(RING, OUTPUT);
   pinMode(THUMB, OUTPUT);
   pinMode(INDEX, OUTPUT);
@@ -48,8 +65,46 @@ void allOFF()
     digitalWrite(MIDDLE, LOW);
     digitalWrite(LITTLE, LOW);
 }
-  int prevVal = analogRead(A0);
+
+int prevVal = analogRead(A0);
+  
 void loop() {
+  //flex();
+  gyro(); 
+ 
+  delay(50);     //Small delay
+ 
+}
+void gyro()
+{
+  Wire.beginTransmission(MPU_addr);
+  Wire.write(0x3B);  
+  Wire.endTransmission(false);
+  Wire.requestFrom(MPU_addr,14,true);  
+  AcX = Wire.read()<<8|Wire.read();     
+  AcY = Wire.read()<<8|Wire.read();  
+  AcZ = Wire.read()<<8|Wire.read();  
+  Tmp = Wire.read()<<8|Wire.read();  
+  GyX = Wire.read()<<8|Wire.read(); 
+  GyY = Wire.read()<<8|Wire.read();  
+  GyZ = Wire.read()<<8|Wire.read();  
+  char *msg2;
+  if(AcX<-6000&&-11000)
+    msg2 = "a";
+  else if(AcX>4000&&6000)
+    msg2 = "b";
+  else if(AcY<-7000&&-5000)
+    msg2 = "c";
+  else if(AcY>5000&&12000)
+    msg2 = "d";
+  else
+    msg2 = "e";
+  Serial.println(msg2);
+  vw_send((uint8_t *)msg2, 7);
+  vw_wait_tx(); // Wait until the whole message is gone
+}
+void flex()
+{
   int value = analogRead(A0);         //Read and save analog value from potentiometer
   Serial.print("average=");    
   Serial.print(average);
@@ -58,29 +113,17 @@ void loop() {
   Serial.print(" | diff=");    
   Serial.println(average - value);
   int diff = average - value;
-
   diff = prevVal - value;
-  
-
   prevVal = value;
-
-  
   if(abs(diff) > 5){
    processFlexData(value);
-
-   if(diff > 6){
+   if(diff > 6)
     resetAverage();
-   }
-   
    if(average - value > 0)
-   allON();
+    allON();
    else
     allOFF();
   }
-  delay(500);     
- 
-                       //Small delay
- 
 }
 
 void resetAverage()
@@ -101,25 +144,6 @@ void processFlexData(int newValue)
   average = sum * 1.0 / cases;
 }
 
-void transmit()
-{
-    const char *msg = "Hello World!";
-    driver.send((uint8_t *)msg, strlen(msg));
-    driver.waitPacketSent();
-    delay(1000);
-}
-void recieve()
-{
-    uint8_t buf[12];
-    uint8_t buflen = sizeof(buf);
-    if (driver.recv(buf, &buflen)) // Non-blocking
-    {
-      int i;
-      // Message with a good checksum received, dump it.
-      Serial.print("Message: ");
-      Serial.println((char*)buf);         
-    }
-}
 
 
 void buttonAction0()

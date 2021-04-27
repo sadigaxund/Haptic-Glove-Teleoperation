@@ -1,13 +1,13 @@
-#include <SPI.h>
-#include <RH_ASK.h>
+#include<Wire.h>
+#include <VirtualWire.h>
 
 /*Pins Declaration*/
 #define echoPinBack     22  // data pin for ultrasonic sensor at the back
 #define echoPinRight    24  // data pin for ultrasonic sensor on the right
 #define echoPinLeft     26  // data pin for ultrasonic sensor on the left
 #define echoPinFront    28  // data pin for ultrasonic sensor in front
-#define dataPinTrnsm    30  // data pin for transmitter module, 433Mhz
-#define dataPinRcvr     32  // data pin for reciever module, 433 Mhz
+#define TX_PIN          12  // data pin for transmitter module, 433Mhz
+#define RX_PIN          11  // data pin for reciever module, 433 Mhz
 #define trigPin         34  // Universal trigger pin for all ultrasonic sensors
 #define wheelInL1       36  // Control pin 1 for the left motor
 #define wheelInL2       38  // Control pin 2 for the left motor
@@ -15,7 +15,7 @@
 #define wheelInR2       42  // Control pin 2 for the right motor
 #define interruptPin    2  // 
 
-RH_ASK driver;
+
 int delayTime = 50; // ms
 
 enum CMD{STOP=0, FORWARD=1, BACKWARD=2, LEFT=3, RIGHT=4};
@@ -23,26 +23,14 @@ enum CMD droneControl = STOP;
 
 
 void blink() {
-  next();
+  stopMotor();
 }
 
-void next()
-{
-    if(droneControl == STOP)
-    droneControl = FORWARD;
-  else if(droneControl == FORWARD)
-    droneControl = BACKWARD;
-  else if(droneControl == BACKWARD)
-    droneControl = LEFT;
-  else if(droneControl == LEFT)
-    droneControl = RIGHT;
- else if(droneControl == RIGHT)
-    droneControl = STOP;
-}
 
 
 void setup()
-{
+{ 
+  Serial.begin(9600);    // Debugging only
   pinMode(interruptPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(interruptPin), blink, CHANGE);
   
@@ -53,97 +41,71 @@ void setup()
   pinMode(echoPinRight, INPUT);
   pinMode(echoPinLeft, INPUT);
   pinMode(echoPinFront, INPUT);
-  pinMode(dataPinRcvr, INPUT);
   
   /*OUTPUTS*/
-  pinMode(dataPinTrnsm, OUTPUT);
+  vw_set_tx_pin(TX_PIN);
+  vw_set_rx_pin(RX_PIN);
+  vw_setup(2000);  
+  vw_rx_start();
   pinMode(trigPin, OUTPUT);
   pinMode(wheelInL1, OUTPUT);
   pinMode(wheelInL2, OUTPUT);
   pinMode(wheelInR1, OUTPUT);
   pinMode(wheelInR2, OUTPUT);
 
-  Serial.begin(9600);    // Debugging only
-  if (!driver.init())
-    Serial.println("init failed");
-
-  fwd();
-  delay(3000);
-  fwd_right();
-  delay(1000);
-  fwd();
-  delay(3000);
-  fwd_right();
-  delay(1000);
-  fwd();
-  delay(3000);
-  fwd_right();
-  delay(1000);
-  fwd();
-  delay(3000);
-  fwd_right();
-  delay(1000);
+ 
 
 }
 
-  //L ->  LOW, HIGH = FORWARD
-  //R ->  HIGH, LOW = FORWARD
+       /*
+        * e = stop
+        * d = right
+        * c = left
+        * b = bck
+        * a = fwd
+        */
+char prev_flag = 'e';
 void loop()
 {
-  delay(delayTime);
- 
- 
-  while(true)
-  {
-    switch(droneControl)
+    uint8_t buf[VW_MAX_MESSAGE_LEN];
+    uint8_t buflen = VW_MAX_MESSAGE_LEN;
+    if (vw_get_message(buf, &buflen)) // Non-blocking
     {
-      case STOP:
-      setRightMotor(LOW, LOW);
-      setLeftMotor(LOW, LOW);
-      break;
-      case FORWARD:
-      setRightMotor(LOW, HIGH);
-      setLeftMotor(HIGH, LOW);
-      break;
-      case BACKWARD:
-      setRightMotor(HIGH, LOW);
-      setLeftMotor(LOW, HIGH);
-      break;
-      case LEFT:
-      setRightMotor(LOW, LOW);
-      setLeftMotor(HIGH, LOW);
-      break;
-      case RIGHT:
-      setRightMotor(LOW, HIGH);
-      setLeftMotor(LOW, LOW);
-      break;
-      
+       int i;
+       char flag = (char)buf[i];
+       if(true){
+         if(flag == 'd'){
+          Serial.println("RIGHT");
+          setRightMotor(LOW, LOW);
+          setLeftMotor(LOW, HIGH);
+         } 
+         if(flag == 'c'){
+          Serial.println("LEFT");
+          setLeftMotor(LOW, LOW);
+          setRightMotor(HIGH, LOW);
+         }
+         if(flag == 'b'){
+          Serial.println("BACKWARDS");
+          setLeftMotor(HIGH, LOW);
+          setRightMotor(LOW, HIGH);
+         }
+         if(flag == 'a'){
+          Serial.println("FORWARDS"); 
+          setRightMotor(HIGH, LOW);
+          setLeftMotor(LOW, HIGH);
+         }
+         if(flag == 'e'){
+          Serial.println("STOP");
+          setRightMotor(LOW, LOW);
+          setLeftMotor(LOW, LOW);
+         }
+       }
+       prev_flag = flag;
     }
-  }
-  
+    delay(50);
+     
 }
 
-
-
-void transmit()
-{
-    const char *msg = "Hello World!";
-    driver.send((uint8_t *)msg, strlen(msg));
-    driver.waitPacketSent();
-    delay(1000);
-}
-void recieve()
-{
-    uint8_t buf[12];
-    uint8_t buflen = sizeof(buf);
-    if (driver.recv(buf, &buflen)) // Non-blocking
-    {
-      int i;
-      // Message with a good checksum received, dump it.
-      Serial.print("Message: ");
-      Serial.println((char*)buf);         
-    }
-}
 
 /** Function for getting the reading of ultrasonic sensor */
 float getEchoOutput(int echoPin)
