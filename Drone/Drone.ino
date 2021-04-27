@@ -53,8 +53,6 @@ void setup()
   pinMode(wheelInR1, OUTPUT);
   pinMode(wheelInR2, OUTPUT);
 
- 
-
 }
 
        /*
@@ -69,10 +67,10 @@ void loop()
 {
     uint8_t buf[VW_MAX_MESSAGE_LEN];
     uint8_t buflen = VW_MAX_MESSAGE_LEN;
-    if (vw_get_message(buf, &buflen)) // Non-blocking
-    {
+    vw_get_message(buf, &buflen);
        int i;
-       char flag = (char)buf[i];
+       char flag = (char)buf[i  ];
+       Serial.println(flag);
        if(true){
          if(flag == 'd'){
           Serial.println("RIGHT");
@@ -101,7 +99,7 @@ void loop()
          }
        }
        prev_flag = flag;
-    }
+    
     delay(50);
      
 }
