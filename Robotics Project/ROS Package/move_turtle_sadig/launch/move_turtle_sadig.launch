@@ -1,0 +1,5 @@
+﻿<launch>
+ <!-- My Package launch file -->
+ <node pkg="move_turtle_sadig" type="program.py" name="turtle_node_sadig" output="screen">
+ </node>
+</launch>
