@@ -5,6 +5,7 @@ Microcontroller boards:
   Arduino Mega (Drone)
   Arduino Pro mini (Glove control)
               DRONE
+Note: Below values might be outdated, use just for reference
 Pinout: 
   Model HC-SR04 U.S. sensors:
   * 22  - Data pin for ultrasonic sensor at the back        
