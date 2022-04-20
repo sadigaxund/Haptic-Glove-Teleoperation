@@ -1,5 +1,5 @@
 # DroneGloveSrc
-### Note: See my youtube channel for demonstration: https://www.youtube.com/channel/UC2gQPeLhl99dIn_xDaWeVQA
+### Demo: https://www.youtube.com/watch?v=e0h6KEz9pS8
 Source codes for Drone and Control glove
 
 Microcontroller boards:
